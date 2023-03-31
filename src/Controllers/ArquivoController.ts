@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 
-enum ErroUpLoad {
+export enum ErroUpLoad {
     OBJETO_ARQUIVO_INVALIDO = 'Objeto de arquivo inválido',
     ERRO_GRAVACAO = 'Não foi possível gravar o arquivo no banco de dados'
 }
@@ -48,11 +48,7 @@ export class ArquivoController {
                 const caminhoArquivoTemp = path.join(this.caminhoDiretorioArquivos, nomeArquivoTemp);
                 fs.writeFileSync(caminhoArquivoTemp, conteudoArquivo);
     
-                const streamGridFS = bucket.openUploadStream(nomeArquivo, {
-                    metadata: {
-                        mime: objArquivo['mimetype']
-                    }
-                })
+                const streamGridFS = bucket.openUploadStream(nomeArquivo, {metadata: {mime: objArquivo['mimetype']}})
     
                 const streamLeitura = fs.createReadStream(caminhoArquivoTemp);
                 streamLeitura
