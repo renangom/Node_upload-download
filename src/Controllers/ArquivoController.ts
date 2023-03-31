@@ -8,6 +8,12 @@ export enum ErroUpLoad {
     ERRO_GRAVACAO = 'Não foi possível gravar o arquivo no banco de dados'
 }
 
+export enum ErroDownload {
+    ID_INVALIDO = 'ID inválido',
+    NENHUM_ARQUIVO_ENCONTRADO = 'Nenhum arquivo foi encontrado com este ID',
+    NAO_FOI_POSSIVEL_GRAVAR = 'Não foi possível gravar o arquivo recuperado'
+}
+
 export class ArquivoController {
     private bd: Db
     private caminhoDiretorioArquivos: string;
@@ -66,5 +72,35 @@ export class ArquivoController {
             }
         })
         
+    }
+
+    public realizarDownload(id : string) : Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            if(id && id.length == 24) {
+                const idObject = new ObjectId(id);
+                const bucket  = this.inicializarBucket();
+                const arrayResultados = await bucket.find({'_id': idObject}).toArray();
+
+                if(arrayResultados.length > 0 ){
+                    const metadados = arrayResultados[0]
+                    const streamGridFS = bucket.openDownloadStream(idObject)
+                    const caminhoArquivo = path.join(this.caminhoDiretorioArquivos, metadados['filename'])
+                    const streamGravacao = fs.createWriteStream(caminhoArquivo);
+
+                    streamGridFS
+                        .pipe(streamGravacao)
+                        .on('finish', () => {
+                            resolve(caminhoArquivo);
+                        })
+                        .on('error', (err) => {
+                            reject(ErroDownload.NAO_FOI_POSSIVEL_GRAVAR)
+                        })
+                }else {
+                    reject(ErroDownload.NENHUM_ARQUIVO_ENCONTRADO);
+                }
+            }else {
+                reject(ErroDownload.ID_INVALIDO);
+            }
+        })
     }
 }
